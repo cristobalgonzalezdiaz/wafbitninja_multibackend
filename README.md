@@ -67,11 +67,12 @@ https://www.digicert.com/es/instalar-certificado-ssl-nginx.htm
 
 ##### Cargar en archivo vars la entrada del proxy reverso
 
-- Modificar los valores deseados como resolver, set_real_ip_from, proxy_pass (URL destino) y proxy_redirect
+- Modificar los valores deseados como resolver, set_real_ip_from, proxy_pass (URL destino).proxy_redirect, set_real_ip_from y si se desea redireccionar desde puerto 80 HTTP a HTTPS
 
 ```
 ssl_bundle_crt: pruebaunbackend.crt
 ssl_key: pruebaunbackend.key
+
 
 nginx_vhosts:
   - listen: "443 ssl"
@@ -84,14 +85,16 @@ nginx_vhosts:
     extra_parameters: |
       location / {
 
+          proxy_set_header Upgrade $http_upgrade;
           proxy_set_header        Host $host;
           proxy_set_header        X-Real-IP $remote_addr;
           proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
           proxy_set_header        X-Forwarded-Proto $scheme;
 
-          proxy_pass           https://http.cat;
-          proxy_read_timeout  90;
-          proxy_redirect      https://http.cat https://pruebaunbackend.abastible.cl;
+          proxy_pass           https://backend;
+          proxy_set_header If-Modified-Since $http_if_modified_since;
+          proxy_connect_timeout 7;
+          proxy_read_timeout 360;
       }
       ssl_certificate     /etc/nginx/certs/pruebaunbackend.crt;
       ssl_certificate_key /etc/nginx/certs/pruebaunbackend.key;
@@ -110,5 +113,20 @@ nginx_vhosts:
       add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload";
       add_header X-Frame-Options SAMEORIGIN;
       add_header X-Content-Type-Options nosniff;
-      add_header X-XSS-Protection "1; mode=block";      
+      add_header X-XSS-Protection "1; mode=block";
+      real_ip_header X-Forwarded-For;
+      set_real_ip_from 144.217.17.4;
+
+  - server_name: pruebaunbackend.abastible.cl
+    listen: 80
+    return: '301 https://pruebaunbackend.abastible.cl$request_uri'
+
+nginx_upstreams:
+  - name: backend
+    strategy: "hash $remote_addr"
+    servers: {
+      "google.com:443 max_fails=1 fail_timeout=60s",
+      "yahoo.com:443 max_fails=1 fail_timeout=60s",
+      "taringa.net max_fails=1 fail_timeout=60s"
+    }
 ```
