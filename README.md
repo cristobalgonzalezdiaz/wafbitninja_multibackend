@@ -1,4 +1,4 @@
-# wafbitninja_backend_unico
+# wafbitninja_multibackend
 
 - Rol para implementar waf con solo un servidor de backend
 
