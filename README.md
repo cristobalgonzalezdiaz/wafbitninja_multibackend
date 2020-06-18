@@ -1,14 +1,16 @@
 # wafbitninja_multibackend
 
-- Rol para implementar waf con solo un servidor de backend
+- Rol para implementar waf con N servidores de backend
 
 ## Instrucciones
 
-- Editar el archivo hosts apuntando al servidor destino, usuario con privilegios sudo y puerto ssh correspondiente
+- Editar el archivo hosts ubicado en el primer nivel de este repositorio apuntando al servidor destino, usuario con privilegios sudo y puerto ssh correspondiente
 
 Ejemplo de inventario    34.141.43.33 ansible_user=cristobal ansible_become=yes ansible_port=10200
 
 - Revisar variables declaradas debajo para personalizar si se desea
+
+- Se debe tener instalado el paquete ansible para lanzar el deploy
 
 - Lanzar la receta ubicado en la ruta padre del repositorio mediante:
 
@@ -29,26 +31,30 @@ forwardingPaquetes: false  # Modificar a True en caso que el equipo cumpla rol d
 
 #### Rol "ssh-hardening" roles/ssh-hardening/vars/main.yml
 
-##### Agregar llaves login root
+##### Agregar llaves login usuario ejemplo (el usuario debe existir)
 
-llaves: <br>
-  - user: root <br>
-    sshKey: ssh-rsa <br>  AAAAB3NzaC1yc2EAAAADAQABAAABAQDFXsPMyC2erjKcVflIHwTX9vINIc4yzcmUE0uJxKLbUtYcbtGTbdk8GvSSiVQkSTjzJl+B79nJ5nIlMou9bMChQjS54B9hbSDdbVohArgazleMq8aToVwy05mdggkvDzdg9U0TpcC6zvaNe94nhBnDO4ShZ/kCSGOpOf5YehVJohKrZkqiBv0fywWk7okLbHBymE+6yxK156KdajT0a/JpqW6WD+3fvdYpZRYSty+FMw/fKVkw75GJHVgne1wzyjTlM29e0L0gszJZvV7YW+050pJiX3s69cBojgD0k9FAqROQpsh/WDUj+h80oWZVX7BosAxOmR7dk#$!ffafff usuario@hostname
+```
+llaves: 
+  - user: usuario 
+    sshKey: ssh-rsa  AAAAB3NzaC1yc2EAAAADAQABAAABAQDFXsPMyC2erjKcVflIHwTX9vINIc4yzcmUE0uJxKLbUtYcbtGTbdk8GvSSiVQkSTjzJl+B79nJ5nIlMou9bMChQjS54B9hbSDdbVohArgazleMq8aToVwy05mdggkvDzdg9U0TpcC6zvaNe94nhBnDO4ShZ/kCSGOpOf5YehVJohKrZkqiBv0fywWk7okLbHBymE+6yxK156KdajT0a/JpqW6WD+3fvdYpZRYSty+FMw/fKVkw75GJHVgne1wzyjTlM29e0L0gszJZvV7YW+050pJiX3s69cBojgD0k9FAqROQpsh/WDUj+h80oWZVX7BosAxOmR7dk#$!ffafff usuario@hostname
+```
 
 ##### Variables default 
 
-sshPort: 22			<br>
-LoginGraceTime: 30		<br>
-MaxAuthTries: 2<br>
-MaxSessions: 4<br>
-GSSAPIAuthentication: "no"<br>
-X11Forwarding: "no"<br>
-usarFirewalld: true<br>
+```
+sshPort: 22	
+LoginGraceTime: 30	
+MaxAuthTries: 2
+MaxSessions: 4
+GSSAPIAuthentication: "no"
+X11Forwarding: "no"
+usarFirewalld: true
 rootlogin: false<br>
-PermitRootLogging: "no"<br>
-HostbasedAuthentication: "no"<br>
-IgnoreRhosts: "yes"<br>
-LogLevel: "INFO"<br>
+PermitRootLogging: "no"
+HostbasedAuthentication: "no"
+IgnoreRhosts: "yes"
+LogLevel: "INFO"
+```
 
 #### Rol "bitninja" roles/bitninja/vars/main.yml
 APIKEY: "LLENARCONUNAAPIKEYENDEFAULTSOENVARS"
@@ -130,3 +136,14 @@ nginx_upstreams:
       "taringa.net max_fails=1 fail_timeout=60s"
     }
 ```
+
+#### Activar WAF 2.0 en panel de plataforma bitninja
+
+- Se debe activar el modulo WAF 2.0 desde el panel central del waf
+
+- Una ves activado, validar el funcionamiento creando el registro DNS a utilizar o utilizar resolucion
+local mediante archivo hosts
+
+- Realizar peticion mediante navegador web: https://pruebaunbackend.abastible.cl/info.php?file=/etc/passwd
+
+- La misma debe bloquearse, mostrar opcion continuar y permitir resolver captcha para comprobar que no es robot.
