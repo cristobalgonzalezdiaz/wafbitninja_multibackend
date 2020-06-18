@@ -1,0 +1,6 @@
+---
+# defaults file for common
+timezone: America/Santiago
+reiniciarSistemaSelinux: true
+actualizarPaquetes: true
+hostnameVar: "localhost"

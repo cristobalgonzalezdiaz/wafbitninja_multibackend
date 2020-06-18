@@ -1,0 +1,99 @@
+---
+# Variable setup.
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Define nginx_user.
+  set_fact:
+    nginx_user: "{{ __nginx_user }}"
+  when: nginx_user is not defined
+
+# Setup/install tasks.
+- include_tasks: setup-RedHat.yml
+  when: ansible_os_family == 'RedHat'
+
+- include_tasks: setup-Ubuntu.yml
+  when: ansible_distribution == 'Ubuntu'
+
+- include_tasks: setup-Debian.yml
+  when: ansible_os_family == 'Debian'
+
+- include_tasks: setup-FreeBSD.yml
+  when: ansible_os_family == 'FreeBSD'
+
+- include_tasks: setup-OpenBSD.yml
+  when: ansible_os_family == 'OpenBSD'
+
+- include_tasks: setup-Archlinux.yml
+  when: ansible_os_family == 'Archlinux'
+
+## Agregado humanapis
+
+- name: Generate dhparams
+  shell: openssl dhparam -out /etc/nginx/dhparams.pem 4096
+  args:
+    creates: /etc/nginx/dhparams.pem
+
+- name: Create a directory if it does not exist
+  file:
+    path: /etc/nginx/certs
+    state: directory
+    mode: '0600'
+    owner: root
+    group: root
+
+- name: Copy file with owner and permissions
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/nginx/certs/{{ item }}"
+    owner: root
+    group: root
+    mode: '0600'
+  loop:
+     - "{{ ssl_bundle_crt }}"
+     - "{{ ssl_key }}"
+
+## Fin humanapis
+
+# Vhost configuration.
+- import_tasks: vhosts.yml
+
+# Nginx setup.
+- name: Copy nginx configuration in place.
+  template:
+    src: "{{ nginx_conf_template }}"
+    dest: "{{ nginx_conf_file_path }}"
+    owner: root
+    group: "{{ root_group }}"
+    mode: 0644
+  notify:
+    - reload nginx
+
+# Agregado humanapis
+- name: Aceptar http en firewalld
+  firewalld:
+    service: http
+    permanent: true
+    state: enabled
+  when: usarFirewalld
+
+# Agregado humanapis
+- name: Aceptar https en firewalld
+  firewalld:
+    service: https
+    permanent: true
+    state: enabled
+  when: usarFirewalld
+
+# Agregado humanapis
+- name: firewalld reload
+  command: firewall-cmd --reload
+  when: usarFirewalld
+
+- name: Ensure nginx service is running as configured.
+  service:
+    name: nginx
+    state: "{{ nginx_service_state }}"
+    enabled: "{{ nginx_service_enabled }}"
+
+## fin humanapis

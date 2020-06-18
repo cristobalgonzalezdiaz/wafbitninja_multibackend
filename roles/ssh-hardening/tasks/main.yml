@@ -1,0 +1,126 @@
+---
+# tasks file for ssh-hardening
+- name: Ensure that required packages are installed and at latest version
+  package:
+    name: "{{ item }}"
+    state: latest
+  loop:
+    - "{{ dependencies }}"
+
+      #- name: Create the users
+      #  user:
+      #    name: "{{ item.user }}"
+      #    shell: /bin/bash
+      #    create_home: true
+      #    groups: wheel
+      #    append: true
+      #  loop: "{{ vmAdmins }}"
+      #  when: (vmAdmins is defined) and (vmAdmins | length > 0)
+
+- name: Configure host to allow public keys
+  authorized_key:
+    user: "{{ item.user }}"
+    state: present
+    key: "{{ item.sshKey }}"
+  loop: "{{ llaves }}"
+  when: (llaves is defined) and (llaves | length > 0)
+
+- name: Start and enable firewalld
+  systemd:
+    name: firewalld
+    state: started
+    enabled: true
+  when: usarFirewalld
+
+- name: Accept SSH traffic on custom port
+  firewalld:
+    port: "{{ sshPort }}/tcp"
+    permanent: true
+    state: enabled
+    immediate: true
+  when: usarFirewalld
+
+    #- name: Disable SSH password authentication
+  #  replace:
+          #    path: /etc/ssh/sshd_config
+    #    regexp: '^#?PasswordAuthentication.*'
+    #    replace: 'PasswordAuthentication no'
+
+- name: Configure custom SSH port
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Port [0-9]+'
+    replace: "Port {{ sshPort }}"
+
+- name: LoginGraceTime
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?LoginGraceTime [0-9]m+'
+    replace: "LoginGraceTime {{ LoginGraceTime }}s"
+
+- name: MaxAuthTries
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?MaxAuthTries 6'
+    replace: "MaxAuthTries {{ MaxAuthTries }}"
+
+- name: MaxSessions
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?MaxSessions 10'
+    replace: "MaxSessions {{ MaxSessions }}"
+
+- name: GSSAPIAuthentication_mod
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^GSSAPIAuthentication yes'
+    replace: "GSSAPIAuthentication {{ GSSAPIAuthentication }}"
+
+- name: X11Forwarding_mod
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^X11Forwarding yes'
+    replace: "X11Forwarding {{ X11Forwarding }}"
+
+- name: LogLevel
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#LogLevel INFO'
+    replace: "LogLevel {{ LogLevel }}"
+
+- name: PermitRootLogin
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#PermitRootLogin yes'
+    replace: "PermitRootLogin {{ PermitRootLogin }}"
+  when: rootlogin
+
+- name: HostbasedAuthentication
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#HostbasedAuthentication no'
+    replace: "HostbasedAuthentication {{ HostbasedAuthentication }}"
+
+- name: IgnoreRhosts
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#IgnoreRhosts yes'
+    replace: "IgnoreRhosts {{ IgnoreRhosts }}"
+
+- name: PermitEmptyPasswords
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#PermitEmptyPasswords no'
+    replace: "PermitEmptyPasswords no"
+
+- name: Agregar Protocol2
+  blockinfile:
+    path: /etc/ssh/sshd_config
+    block: |
+      Protocol 2
+
+- name: Start and enable services
+  systemd:
+    name: sshd
+    state: restarted
+    enabled: true

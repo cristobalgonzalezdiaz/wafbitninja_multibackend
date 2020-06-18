@@ -1,0 +1,81 @@
+---
+# tasks file for common
+- hostname:
+    name: "{{ hostnameVar }}"
+
+- name: Agregar to /etc/hosts
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '^127\.0\.0\.1[ \t]+localhost'
+    line: '127.0.0.1 localhost {{ hostnameVar }}'
+    state: present
+
+- name: Disable SELinux
+  selinux:
+    state: disabled
+
+- name: Set timezone to America/Santiago
+  timezone:
+    name: "{{ timezone }}"
+
+- name: upgrade all packages
+  yum:
+    name: '*'
+    state: latest
+  when: actualizarPaquetes
+
+- name: ensure a list of packages installed
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - htop
+    - ncdu
+    - telnet
+    - vim
+    - lsof
+    - tmux
+    - iotop
+    - bind-utils
+
+- name: ensure ntpdate isn't installed
+  package:
+    name: 'ntpdate'
+    state: absent
+
+- name: install chrony
+  package:
+    name: chrony
+    state: present
+
+# I mask instead of uninstall, because some services  
+# depend on NTP
+#- name: Mask NTP service
+  #  systemd:
+          #    name: ntpd
+    #    enabled: no
+    #    masked: yes
+    #    state: stopped
+
+- name: Ensure chronyd is active
+  service:
+    name: chronyd
+    state: started
+    enabled: yes
+
+- name: Verificar estado de selinux para reboot
+  command: getenforce
+  register: sestatus
+
+- name: Reboot para aplicar selinux
+  reboot:
+    msg: "Reinicio ejecutado por Ansible"
+    connect_timeout: 5
+    reboot_timeout: 600
+    pre_reboot_delay: 0
+    post_reboot_delay: 30
+    test_command: whoami
+  when:
+    - reiniciarSistemaSelinux 
+    - not ("Disabled" in sestatus.stdout)

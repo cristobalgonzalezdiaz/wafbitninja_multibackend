@@ -1,0 +1,41 @@
+---
+# tasks file for bitninja
+
+- name: Instalar python-pip
+  package:
+    name: python3-pip
+    state: present
+
+- name: install pexpect
+  pip:
+    name: pexpect
+
+- name: Verificar instalación de bitninja
+  stat: path=/etc/bitninja
+  register: bitninja_install
+
+- name: "Instalar bitninja"
+  expect:
+    echo: yes
+    timeout: null
+    command: '/bin/bash -c "/usr/bin/curl https://get.bitninja.io/install.sh | /bin/bash -s - --license_key={{ APIKEY }}"'
+    responses:
+     'Would you like to proceed\? \[y\/N\] ': 'y'
+     'Would you like to execute this scan after the installation\? \[y\/N\] ': 'N'
+  when: not bitninja_install.stat.exists
+
+- name: Permitir eth0 en waf config
+  lineinfile:
+    path: /etc/bitninja/WAFManager/config.ini
+    regexp: "^(.*);interface(.*)='eth0'"
+    line: interface[]='eth0'
+
+- name: Habilitar waf2.0
+  command: /usr/sbin/bitninjacli --waf=enabled
+
+- name: Reiniciar servicio
+  systemd:
+    name: bitninja
+    state: restarted
+    enabled: true
+

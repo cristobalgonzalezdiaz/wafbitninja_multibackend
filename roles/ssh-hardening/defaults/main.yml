@@ -1,0 +1,17 @@
+---
+# defaults file for ssh-hardening
+sshPort: 22
+LoginGraceTime: 30
+MaxAuthTries: 2
+MaxSessions: 4
+GSSAPIAuthentication: "no"
+X11Forwarding: "no"
+usarFirewalld: true
+rootlogin: false
+PermitRootLogging: "no"
+HostbasedAuthentication: "no"
+IgnoreRhosts: "yes"
+LogLevel: "INFO"
+
+dependencies:
+  - firewalld

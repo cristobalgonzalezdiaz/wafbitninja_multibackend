@@ -1,0 +1,11 @@
+---
+- hosts: bitninja
+  #  sudo: yes
+  gather_facts: yes
+  roles:
+    - epel
+    - sysctl_hardening
+    - common
+    - ssh-hardening
+    - bitninja
+    - nginx

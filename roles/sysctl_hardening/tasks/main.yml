@@ -1,0 +1,28 @@
+---
+# tasks file for sysctl_hardening
+- sysctl:
+    name: "{{ item }}"
+    value: '1'
+    state: present
+  loop:
+    - net.ipv4.tcp_syncookies
+    - net.ipv4.icmp_echo_ignore_broadcasts
+    - net.ipv4.conf.all.rp_filter
+    - net.ipv4.conf.all.log_martians
+
+- sysctl:
+    name: net.ipv4.ip_forward
+    value: '0'
+    state: present
+  when: not forwardingPaquetes # en caso de ser router/firewall
+
+- sysctl:
+    name: "{{ item }}"
+    value: '0'
+    state: present
+  loop:
+    - net.ipv4.tcp_timestamps
+    - net.ipv4.conf.all.accept_redirects
+    - net.ipv4.conf.all.accept_source_route
+    - net.ipv4.conf.all.send_redirects
+
